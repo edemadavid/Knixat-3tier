@@ -1,7 +1,7 @@
 # terraform.tfvars
 
 resource_group_name = "cohort3-edema"
-location = "eastus2"
+location            = "eastus2"
 
 tags = {
   Owner        = "Edema"
@@ -29,7 +29,7 @@ sub_net = {
     name           = "api-vm"
     address_prefix = "10.0.1.0/24"
   }
-  "db-snet"  = {
+  "db-snet" = {
     name           = "db-vm"
     address_prefix = "10.0.2.0/24"
   }
@@ -50,15 +50,15 @@ nsg-snet = {
 
 network_interface = {
   "vm-nic1" = {
-    name = "web-nic"
+    name                  = "web-nic"
     network_interface_ids = []
   }
   "vm-nic2" = {
-    name = "api-nic"
+    name                  = "api-nic"
     network_interface_ids = []
   }
   "vm-nic3" = {
-    name = "db-nic"
+    name                  = "db-nic"
     network_interface_ids = []
   }
 }

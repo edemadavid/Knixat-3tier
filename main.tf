@@ -11,6 +11,7 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   address_space       = [var.virtual_network.address]
+  depends_on          = [azurerm_resource_group.rg]
 }
 
 # Creation of 3 subnets
@@ -19,6 +20,7 @@ resource "azurerm_network_security_group" "nsg" {
   name                = each.key
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  depends_on          = [azurerm_resource_group.rg, azurerm_subnet.snet]
 }
 
 resource "azurerm_subnet" "snet" {
@@ -27,12 +29,14 @@ resource "azurerm_subnet" "snet" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = var.virtual_network["vnet"]
   address_prefixes     = [each.value.address_prefix]
+  depends_on           = [azurerm_virtual_network.vnet]
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg-snet" {
-  for_each                    = var.sub_net
-  subnet_id                   = azurerm_subnet.snet[each.key].id
-  network_security_group_id   = azurerm_network_security_group.nsg[each.key].id
+  for_each                  = var.sub_net
+  subnet_id                 = azurerm_subnet.snet[each.key].id
+  network_security_group_id = azurerm_network_security_group.nsg[each.key].id
+  depends_on                = [azurerm_subnet.snet]
 }
 
 resource "azurerm_network_interface" "nic" {
@@ -46,6 +50,7 @@ resource "azurerm_network_interface" "nic" {
     subnet_id                     = azurerm_subnet.snet[each.value.subnet].id
     private_ip_address_allocation = "Dynamic"
   }
+  depends_on = [azurerm_subnet.snet]
 }
 
 #NSG Rules
@@ -62,6 +67,7 @@ resource "azurerm_network_security_rule" "web-nsg-rule" {
   destination_address_prefix  = each.value.destination_address_prefix
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = var.network_security_group.web-snet
+  depends_on                  = [azurerm_subnet.snet]
 }
 
 resource "azurerm_network_security_rule" "api-nsg-rule" {
@@ -77,6 +83,7 @@ resource "azurerm_network_security_rule" "api-nsg-rule" {
   destination_address_prefix  = each.value.destination_address_prefix
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = var.network_security_group.api-snet
+  depends_on                  = [azurerm_subnet.snet]
 }
 
 resource "azurerm_network_security_rule" "db-nsg-rule" {
@@ -92,6 +99,7 @@ resource "azurerm_network_security_rule" "db-nsg-rule" {
   destination_address_prefix  = each.value.destination_address_prefix
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = var.network_security_group.db-snet
+  depends_on                  = [azurerm_subnet.snet]
 }
 
 #Create 3 VMs
@@ -125,7 +133,7 @@ resource "azurerm_virtual_machine" "main" {
   os_profile_linux_config {
     disable_password_authentication = false
   }
-  tags = {
-    Environment = var.tags.Environment
-  }
+  tags = var.tags
+
+  depends_on = [azurerm_network_interface.nic]
 }
